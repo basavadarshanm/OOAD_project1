@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.onlinebanking.controller.DashboardController">
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+            <Label fx:id="welcomeLabel" text="Welcome" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="Refresh" onAction="#handleRefresh" />
+        </HBox>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.4">
+            <VBox spacing="10">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label text="Accounts" style="-fx-font-weight: bold;" />
+                <ListView fx:id="accountsList" onMouseClicked="#handleAccountSelection" prefHeight="200" />
+                <Label text="Recent Transactions" style="-fx-font-weight: bold;" />
+                <ListView fx:id="transactionsList" prefHeight="200" />
+            </VBox>
+            <VBox spacing="12">
+                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+                <Label text="Transfer Funds" style="-fx-font-weight: bold;" />
+                <TextField fx:id="transferToField" promptText="To account number" />
+                <TextField fx:id="transferAmountField" promptText="Amount" />
+                <Button text="Transfer" onAction="#handleTransfer" />
+
+                <Separator />
+                <Label text="Pay Bill" style="-fx-font-weight: bold;" />
+                <TextField fx:id="billerField" promptText="Biller name" />
+                <TextField fx:id="billAmountField" promptText="Amount" />
+                <Button text="Pay" onAction="#handleBillPay" />
+
+                <Separator />
+                <Label text="Add Beneficiary" style="-fx-font-weight: bold;" />
+                <TextField fx:id="beneficiaryNameField" promptText="Name" />
+                <TextField fx:id="beneficiaryAccountField" promptText="Account number" />
+                <TextField fx:id="beneficiaryBankField" promptText="Bank" />
+                <Button text="Add" onAction="#handleAddBeneficiary" />
+
+                <Label fx:id="statusLabel" textFill="green" wrapText="true" />
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>

@@ -1,0 +1,23 @@
+# Maven/Java
+/target/
+ /data/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+hs_err_pid*
+replay_pid*
+
+# IDE
+/.idea/
+/.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env/local config
+/.env
+/.env.local
