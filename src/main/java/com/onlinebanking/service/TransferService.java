@@ -9,7 +9,6 @@ import javax.sql.DataSource;
 
 import com.onlinebanking.model.Account;
 import com.onlinebanking.repository.AccountRepository;
-import com.onlinebanking.repository.TransactionRepository;
 
 /**
  * Handles atomic fund transfers using a single JDBC transaction.
@@ -17,12 +16,10 @@ import com.onlinebanking.repository.TransactionRepository;
 public class TransferService {
     private final DataSource dataSource;
     private final AccountRepository accountRepository;
-    private final TransactionRepository transactionRepository;
 
-    public TransferService(DataSource dataSource, AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public TransferService(DataSource dataSource, AccountRepository accountRepository) {
         this.dataSource = dataSource;
         this.accountRepository = accountRepository;
-        this.transactionRepository = transactionRepository;
     }
 
     public void transfer(String fromAccountNumber, String toAccountNumber, BigDecimal amount) {

@@ -1,5 +1,6 @@
 package com.onlinebanking.config;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
@@ -53,7 +54,7 @@ public final class ApplicationContext {
 
         this.authService = new AuthService(userRepository);
         this.accountService = new AccountService(accountRepository, transactionRepository);
-        this.transferService = new TransferService(dataSource, accountRepository, transactionRepository);
+        this.transferService = new TransferService(dataSource, accountRepository);
         this.beneficiaryService = new BeneficiaryService(beneficiaryRepository);
         this.billPayService = new BillPayService(accountRepository, transactionRepository);
 
@@ -69,7 +70,7 @@ public final class ApplicationContext {
             }
             try {
                 return type.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
                 throw new IllegalStateException("Unable to create controller: " + type, e);
             }
         };

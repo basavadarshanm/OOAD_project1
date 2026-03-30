@@ -53,7 +53,7 @@ public class RegisterController {
         try {
             authService.register(username, password);
             goToLogin("Registration successful. Please log in.");
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             messageLabel.setText(e.getMessage());
         }
     }
