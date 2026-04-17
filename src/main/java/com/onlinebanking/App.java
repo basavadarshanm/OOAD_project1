@@ -16,7 +16,7 @@ public class App extends Application {
     public void start(Stage stage) throws Exception {
         ApplicationContext context = ApplicationContext.getInstance();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
-        loader.setControllerFactory(param -> context.getControllerFactory().apply(param));
+        loader.setControllerFactory(context.getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 320);
         stage.setTitle("Online Banking");
         stage.setScene(scene);

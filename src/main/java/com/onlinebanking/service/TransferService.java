@@ -2,75 +2,75 @@ package com.onlinebanking.service;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import javax.sql.DataSource;
 
 import com.onlinebanking.model.Account;
+import com.onlinebanking.model.Transaction;
 import com.onlinebanking.repository.AccountRepository;
+import com.onlinebanking.repository.TransactionRepository;
 
 /**
- * Handles atomic fund transfers using a single JDBC transaction.
+ * Handles money transfers between accounts with balance validation.
  */
 public class TransferService {
     private final DataSource dataSource;
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
 
-    public TransferService(DataSource dataSource, AccountRepository accountRepository) {
+    public TransferService(DataSource dataSource, AccountRepository accountRepository, TransactionRepository transactionRepository) {
         this.dataSource = dataSource;
         this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
     }
 
-    public void transfer(String fromAccountNumber, String toAccountNumber, BigDecimal amount) {
+    /**
+     * Transfer money between two accounts atomically.
+     * @throws IllegalArgumentException if amount is invalid
+     * @throws IllegalStateException if transfer fails
+     */
+    public Transaction transfer(String fromAccountNumber, String toAccountNumber, BigDecimal amount, String description) {
         if (amount.signum() <= 0) {
             throw new IllegalArgumentException("Amount must be positive");
         }
+
         Optional<Account> fromOpt = accountRepository.findByAccountNumber(fromAccountNumber);
         Optional<Account> toOpt = accountRepository.findByAccountNumber(toAccountNumber);
+
         if (fromOpt.isEmpty() || toOpt.isEmpty()) {
-            throw new IllegalStateException("Account not found");
+            throw new IllegalStateException("One or both accounts not found");
         }
+
         Account from = fromOpt.get();
         Account to = toOpt.get();
+
         if (from.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient funds");
+            throw new IllegalStateException("Insufficient funds. Available: " + from.getBalance());
         }
 
-        BigDecimal fromNew = from.getBalance().subtract(amount);
-        BigDecimal toNew = to.getBalance().add(amount);
-
-        String updateSql = "UPDATE accounts SET balance = ? WHERE id = ?";
-        String txSql = "INSERT INTO transactions (account_id, type, amount, occurred_at, description) VALUES (?,?,?,?,?)";
-
+        // Use JDBC transaction for atomicity
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
-            try (var update = conn.prepareStatement(updateSql); var txStmt = conn.prepareStatement(txSql)) {
-                update.setBigDecimal(1, fromNew);
-                update.setLong(2, from.getId());
-                update.executeUpdate();
+            try {
+                // Update balances
+                BigDecimal fromNew = from.getBalance().subtract(amount);
+                BigDecimal toNew = to.getBalance().add(amount);
 
-                update.setBigDecimal(1, toNew);
-                update.setLong(2, to.getId());
-                update.executeUpdate();
+                accountRepository.updateBalance(from.getId(), fromNew);
+                accountRepository.updateBalance(to.getId(), toNew);
 
-                LocalDateTime now = LocalDateTime.now();
-
-                txStmt.setLong(1, from.getId());
-                txStmt.setString(2, "DEBIT");
-                txStmt.setBigDecimal(3, amount);
-                txStmt.setObject(4, now);
-                txStmt.setString(5, "Transfer to " + to.getAccountNumber());
-                txStmt.executeUpdate();
-
-                txStmt.setLong(1, to.getId());
-                txStmt.setString(2, "CREDIT");
-                txStmt.setBigDecimal(3, amount);
-                txStmt.setObject(4, now);
-                txStmt.setString(5, "Transfer from " + from.getAccountNumber());
-                txStmt.executeUpdate();
+                // Create transaction record
+                Transaction tx = transactionRepository.create(
+                        from.getId(),
+                        to.getId(),
+                        "TRANSFER",
+                        amount,
+                        description != null ? description : "Transfer to " + toAccountNumber
+                );
 
                 conn.commit();
+                return tx;
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
@@ -78,7 +78,18 @@ public class TransferService {
                 conn.setAutoCommit(true);
             }
         } catch (Exception e) {
-            throw new IllegalStateException("Transfer failed", e);
+            throw new IllegalStateException("Transfer failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Check if transfer is possible (balance sufficient)
+     */
+    public boolean canTransfer(String accountNumber, BigDecimal amount) {
+        Optional<Account> accountOpt = accountRepository.findByAccountNumber(accountNumber);
+        if (accountOpt.isEmpty()) {
+            return false;
+        }
+        return accountOpt.get().getBalance().compareTo(amount) >= 0;
     }
 }

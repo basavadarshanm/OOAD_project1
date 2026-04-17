@@ -5,47 +5,65 @@ import java.time.LocalDateTime;
 
 public class Transaction {
     private final long id;
-    private final long accountId;
-    private final String type; // DEBIT or CREDIT
+    private final long fromAccountId;
+    private final Long toAccountId; // nullable for bill payments
+    private final String transactionType; // TRANSFER, BILL_PAYMENT, DEPOSIT, WITHDRAWAL
     private final BigDecimal amount;
-    private final LocalDateTime occurredAt;
     private final String description;
+    private final String status; // PENDING, COMPLETED, FAILED
+    private final LocalDateTime createdAt;
 
-    public Transaction(long id, long accountId, String type, BigDecimal amount, LocalDateTime occurredAt, String description) {
+    public Transaction(long id, long fromAccountId, Long toAccountId, String transactionType,
+                      BigDecimal amount, String description, String status, LocalDateTime createdAt) {
         this.id = id;
-        this.accountId = accountId;
-        this.type = type;
+        this.fromAccountId = fromAccountId;
+        this.toAccountId = toAccountId;
+        this.transactionType = transactionType;
         this.amount = amount;
-        this.occurredAt = occurredAt;
         this.description = description;
+        this.status = status;
+        this.createdAt = createdAt;
     }
 
     public long getId() {
         return id;
     }
 
-    public long getAccountId() {
-        return accountId;
+    public long getFromAccountId() {
+        return fromAccountId;
     }
 
-    public String getType() {
-        return type;
+    public Long getToAccountId() {
+        return toAccountId;
+    }
+
+    public String getTransactionType() {
+        return transactionType;
     }
 
     public BigDecimal getAmount() {
         return amount;
     }
 
-    public LocalDateTime getOccurredAt() {
-        return occurredAt;
-    }
-
     public String getDescription() {
         return description;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     @Override
     public String toString() {
-        return occurredAt + " - " + type + " - " + amount + " - " + description;
+        return String.format("[%s] %s | Amount: %s | Status: %s | %s",
+                createdAt.toLocalDate(),
+                transactionType,
+                amount,
+                status,
+                description);
     }
 }

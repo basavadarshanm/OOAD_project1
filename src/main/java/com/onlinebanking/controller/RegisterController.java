@@ -66,7 +66,7 @@ public class RegisterController {
     private void goToLogin(String infoMessage) throws IOException {
         Stage stage = (Stage) usernameField.getScene().getWindow();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
-        loader.setControllerFactory(param -> ApplicationContext.getInstance().getControllerFactory().apply(param));
+        loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 320);
         stage.setScene(scene);
         stage.setTitle("Online Banking");

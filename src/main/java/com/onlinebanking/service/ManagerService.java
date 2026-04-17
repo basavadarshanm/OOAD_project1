@@ -1,0 +1,113 @@
+package com.onlinebanking.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.onlinebanking.model.Transaction;
+import com.onlinebanking.model.User;
+import com.onlinebanking.repository.TransactionRepository;
+import com.onlinebanking.repository.UserRepository;
+
+/**
+ * Manager/Admin service for user and transaction management
+ */
+public class ManagerService {
+    private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
+
+    public ManagerService(UserRepository userRepository, TransactionRepository transactionRepository) {
+        this.userRepository = userRepository;
+        this.transactionRepository = transactionRepository;
+    }
+
+    /**
+     * Get all customers
+     */
+    public List<User> getAllCustomers() {
+        return userRepository.findAllByRole("CUSTOMER");
+    }
+
+    /**
+     * Get all users
+     */
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    /**
+     * Get a specific user
+     */
+    public Optional<User> getUser(long userId) {
+        return userRepository.findById(userId);
+    }
+
+    /**
+     * Block a user account
+     */
+    public void blockUser(long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalStateException("User not found");
+        }
+        userRepository.updateBlockStatus(userId, true);
+    }
+
+    /**
+     * Unblock a user account
+     */
+    public void unblockUser(long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalStateException("User not found");
+        }
+        userRepository.updateBlockStatus(userId, false);
+    }
+
+    /**
+     * Check if user is blocked
+     */
+    public boolean isUserBlocked(long userId) {
+        return userRepository.isUserBlocked(userId);
+    }
+
+    /**
+     * Delete a user
+     */
+    public void deleteUser(long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalStateException("User not found");
+        }
+        userRepository.deleteUser(userId);
+    }
+
+    /**
+     * Create a new user (by admin)
+     */
+    public User createUser(String username, String password, String role) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
+        if (password == null || password.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new IllegalStateException("Username already exists");
+        }
+        return userRepository.create(username, password, role);
+    }
+
+    /**
+     * Get all transactions
+     */
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
+
+    /**
+     * Get transaction by ID
+     */
+    public Optional<Transaction> getTransaction(long transactionId) {
+        return transactionRepository.findById(transactionId);
+    }
+}

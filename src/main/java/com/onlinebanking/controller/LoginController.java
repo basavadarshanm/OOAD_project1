@@ -49,7 +49,7 @@ public class LoginController {
     protected void handleShowRegister(ActionEvent event) throws IOException {
         Stage stage = (Stage) usernameField.getScene().getWindow();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/register.fxml"));
-        loader.setControllerFactory(param -> ApplicationContext.getInstance().getControllerFactory().apply(param));
+        loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 360);
         stage.setScene(scene);
         stage.setTitle("Online Banking - Register");
@@ -57,7 +57,7 @@ public class LoginController {
 
     private void navigateToDashboard(User user) throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
-        loader.setControllerFactory(param -> ApplicationContext.getInstance().getControllerFactory().apply(param));
+        loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load());
         DashboardController controller = loader.getController();
         controller.setCurrentUser(user);

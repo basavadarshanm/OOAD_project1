@@ -5,44 +5,25 @@
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.onlinebanking.controller.DashboardController">
     <top>
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-            <Label fx:id="welcomeLabel" text="Welcome" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
-            <Region HBox.hgrow="ALWAYS" />
-            <Button text="Refresh" onAction="#handleRefresh" />
-        </HBox>
+        <VBox spacing="10" style="-fx-background-color: #2c3e50; -fx-padding: 15;">
+            <Label fx:id="welcomeLabel" style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;" />
+            <Label fx:id="accountLabel" style="-fx-text-fill: #ecf0f1;" />
+            <Label fx:id="balanceLabel" style="-fx-text-fill: #27ae60; -fx-font-size: 14px; -fx-font-weight: bold;" />
+        </VBox>
     </top>
     <center>
-        <SplitPane dividerPositions="0.4">
-            <VBox spacing="10">
-                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-                <Label text="Accounts" style="-fx-font-weight: bold;" />
-                <ListView fx:id="accountsList" onMouseClicked="#handleAccountSelection" prefHeight="200" />
-                <Label text="Recent Transactions" style="-fx-font-weight: bold;" />
-                <ListView fx:id="transactionsList" prefHeight="200" />
-            </VBox>
-            <VBox spacing="12">
-                <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
-                <Label text="Transfer Funds" style="-fx-font-weight: bold;" />
-                <TextField fx:id="transferToField" promptText="To account number" />
-                <TextField fx:id="transferAmountField" promptText="Amount" />
-                <Button text="Transfer" onAction="#handleTransfer" />
-
-                <Separator />
-                <Label text="Pay Bill" style="-fx-font-weight: bold;" />
-                <TextField fx:id="billerField" promptText="Biller name" />
-                <TextField fx:id="billAmountField" promptText="Amount" />
-                <Button text="Pay" onAction="#handleBillPay" />
-
-                <Separator />
-                <Label text="Add Beneficiary" style="-fx-font-weight: bold;" />
-                <TextField fx:id="beneficiaryNameField" promptText="Name" />
-                <TextField fx:id="beneficiaryAccountField" promptText="Account number" />
-                <TextField fx:id="beneficiaryBankField" promptText="Bank" />
-                <Button text="Add" onAction="#handleAddBeneficiary" />
-
-                <Label fx:id="statusLabel" textFill="green" wrapText="true" />
-            </VBox>
-        </SplitPane>
+        <VBox spacing="10" style="-fx-padding: 15;">
+            <Label text="Recent Transactions" style="-fx-font-size: 14px; -fx-font-weight: bold;" />
+            <ListView fx:id="transactionsList" prefHeight="250" />
+        </VBox>
     </center>
+    <bottom>
+        <HBox spacing="10" style="-fx-padding: 15; -fx-background-color: #ecf0f1;">
+            <Button text="Transfer Money" onAction="#handleTransfer" style="-fx-font-size: 12px;" />
+            <Button text="Pay Bills" onAction="#handleBillPay" style="-fx-font-size: 12px;" />
+            <Button text="Refresh" onAction="#handleRefresh" style="-fx-font-size: 12px;" />
+            <Button text="Logout" onAction="#handleLogout" style="-fx-font-size: 12px;" />
+        </HBox>
+    </bottom>
 </BorderPane>
+

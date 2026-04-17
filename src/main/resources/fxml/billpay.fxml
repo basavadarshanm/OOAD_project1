@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.onlinebanking.controller.PayBillsController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 15; -fx-background-color: #34495e;">
+            <Label text="Pay Bills" style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;" />
+            <Label fx:id="balanceLabel" style="-fx-text-fill: #2ecc71;" />
+        </VBox>
+    </top>
+    <center>
+        <VBox spacing="15" style="-fx-padding: 20;">
+            <GridPane hgap="10" vgap="10">
+                <Label text="Biller Name:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                <TextField fx:id="billerField" promptText="e.g., Electric Company" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                
+                <Label text="Bill Reference:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                <TextField fx:id="billRefField" promptText="Reference Number" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                
+                <Label text="Amount (Rs.):" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                <TextField fx:id="amountField" promptText="0.00" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                
+                <Label text="Due Date:" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                <DatePicker fx:id="dueDate" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+            </GridPane>
+            
+            <HBox spacing="10">
+                <Button text="Pay Bill" onAction="#handlePayBill" prefWidth="100" />
+                <Button text="Back" onAction="#handleBack" prefWidth="100" />
+            </HBox>
+            
+            <Label fx:id="messageLabel" style="-fx-font-size: 12px;" />
+            <TextArea fx:id="receiptArea" prefHeight="200" wrapText="true" />
+        </VBox>
+    </center>
+</BorderPane>
