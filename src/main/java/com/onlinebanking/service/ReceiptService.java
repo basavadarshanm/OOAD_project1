@@ -2,59 +2,72 @@ package com.onlinebanking.service;
 
 import java.time.format.DateTimeFormatter;
 
+import com.onlinebanking.builder.ReceiptBuilder;
+import com.onlinebanking.dto.ReceiptDto;
 import com.onlinebanking.model.Transaction;
 
 /**
- * Generates transaction receipts
+ * Builder Pattern + DTO Pattern: constructs display receipts for UI safely.
  */
 public class ReceiptService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public String generateTransactionReceipt(Transaction transaction, String fromAccountNumber, String toAccountNumber) {
-        StringBuilder receipt = new StringBuilder();
-        receipt.append("\n");
-        receipt.append("========================================\n");
-        receipt.append("         TRANSACTION RECEIPT           \n");
-        receipt.append("========================================\n");
-        receipt.append("Transaction ID: ").append(transaction.getId()).append("\n");
-        receipt.append("Type: ").append(transaction.getTransactionType()).append("\n");
-        receipt.append("Date & Time: ").append(transaction.getCreatedAt().format(DATE_FORMATTER)).append("\n");
-        receipt.append("----------------------------------------\n");
-        receipt.append("From Account: ").append(fromAccountNumber).append("\n");
-        if (toAccountNumber != null) {
-            receipt.append("To Account: ").append(toAccountNumber).append("\n");
-        }
-        receipt.append("Amount: Rs. ").append(String.format("%.2f", transaction.getAmount())).append("\n");
-        receipt.append("Description: ").append(transaction.getDescription()).append("\n");
-        receipt.append("Status: ").append(transaction.getStatus()).append("\n");
-        receipt.append("----------------------------------------\n");
-        receipt.append("    Thank you for your transaction    \n");
-        receipt.append("========================================\n");
+        return generateTransactionReceiptDto(transaction, fromAccountNumber, toAccountNumber).body();
+    }
 
-        return receipt.toString();
+    public ReceiptDto generateTransactionReceiptDto(Transaction transaction, String fromAccountNumber, String toAccountNumber) {
+        ReceiptBuilder builder = new ReceiptBuilder()
+                .separator()
+                .line("         TRANSACTION RECEIPT           ")
+                .separator()
+                .line("Transaction ID: " + transaction.getId())
+                .line("Type: " + transaction.getTransactionType())
+                .line("Date & Time: " + transaction.getCreatedAt().format(DATE_FORMATTER))
+                .dashedSeparator()
+                .line("From Account: " + fromAccountNumber);
+
+        if (toAccountNumber != null) {
+            builder.line("To Account: " + toAccountNumber);
+        }
+
+        builder.line("Amount: Rs. " + String.format("%.2f", transaction.getAmount()))
+                .line("Description: " + transaction.getDescription())
+                .line("Status: " + transaction.getStatus())
+                .dashedSeparator()
+                .line("    Thank you for your transaction    ")
+                .separator();
+
+        return new ReceiptDto("TRANSACTION", builder.build());
     }
 
     public String generateBillPaymentReceipt(String billerName, String billerReference, 
                                              String accountNumber, java.math.BigDecimal amount,
                                              String transactionId) {
-        StringBuilder receipt = new StringBuilder();
-        receipt.append("\n");
-        receipt.append("========================================\n");
-        receipt.append("        BILL PAYMENT RECEIPT          \n");
-        receipt.append("========================================\n");
-        receipt.append("Transaction ID: ").append(transactionId).append("\n");
-        receipt.append("Date & Time: ").append(java.time.LocalDateTime.now().format(DATE_FORMATTER)).append("\n");
-        receipt.append("----------------------------------------\n");
-        receipt.append("Biller Name: ").append(billerName).append("\n");
-        receipt.append("Bill Reference: ").append(billerReference).append("\n");
-        receipt.append("From Account: ").append(accountNumber).append("\n");
-        receipt.append("Amount Paid: Rs. ").append(String.format("%.2f", amount)).append("\n");
-        receipt.append("Status: PAID\n");
-        receipt.append("----------------------------------------\n");
-        receipt.append("   Bill payment successful!          \n");
-        receipt.append("========================================\n");
+        return generateBillPaymentReceiptDto(billerName, billerReference, accountNumber, amount, transactionId).body();
+    }
 
-        return receipt.toString();
+    public ReceiptDto generateBillPaymentReceiptDto(String billerName, String billerReference,
+                                                    String accountNumber, java.math.BigDecimal amount,
+                                                    String transactionId) {
+        String body = new ReceiptBuilder()
+                .separator()
+                .line("        BILL PAYMENT RECEIPT          ")
+                .separator()
+                .line("Transaction ID: " + transactionId)
+                .line("Date & Time: " + java.time.LocalDateTime.now().format(DATE_FORMATTER))
+                .dashedSeparator()
+                .line("Biller Name: " + billerName)
+                .line("Bill Reference: " + billerReference)
+                .line("From Account: " + accountNumber)
+                .line("Amount Paid: Rs. " + String.format("%.2f", amount))
+                .line("Status: PAID")
+                .dashedSeparator()
+                .line("   Bill payment successful!          ")
+                .separator()
+                .build();
+
+        return new ReceiptDto("BILL_PAYMENT", body);
     }
 
     public String generateTransferReceipt(String fromAccountNumber, String toAccountNumber,

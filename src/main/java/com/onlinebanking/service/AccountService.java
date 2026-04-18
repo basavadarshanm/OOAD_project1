@@ -4,11 +4,15 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import com.onlinebanking.factory.AccountFactory;
 import com.onlinebanking.model.Account;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.repository.AccountRepository;
 import com.onlinebanking.repository.TransactionRepository;
 
+/**
+ * Service Layer Pattern: account business rules and validations.
+ */
 public class AccountService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
@@ -95,7 +99,8 @@ public class AccountService {
                 "Cash deposit"
         );
 
-        return new Account(account.getId(), account.getUserId(), account.getAccountNumber(), newBalance);
+        // Factory Pattern: central account object creation.
+        return AccountFactory.create(account.getId(), account.getUserId(), account.getAccountNumber(), newBalance);
     }
 
     public String generateSuggestedAccountNumber() {

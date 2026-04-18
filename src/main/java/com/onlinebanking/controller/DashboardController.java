@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.onlinebanking.config.ApplicationContext;
+import com.onlinebanking.dto.UserManagementDto;
 import com.onlinebanking.model.Account;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.model.User;
@@ -13,6 +15,7 @@ import com.onlinebanking.service.AccountService;
 import com.onlinebanking.service.BeneficiaryService;
 import com.onlinebanking.service.BillPayService;
 import com.onlinebanking.service.ManagerService;
+import com.onlinebanking.service.ReceiptService;
 import com.onlinebanking.service.TransferService;
 
 import javafx.collections.FXCollections;
@@ -25,6 +28,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
 
 public class DashboardController {
@@ -33,6 +37,7 @@ public class DashboardController {
     private final BeneficiaryService beneficiaryService;
     private final BillPayService billPayService;
     private final ManagerService managerService;
+    private final ReceiptService receiptService;
 
     private User currentUser;
     private Account currentAccount;
@@ -57,18 +62,22 @@ public class DashboardController {
     private Button userDetailsButton;
     @FXML
     private Button addMoneyButton;
+    @FXML
+    private Button manageUsersButton;
 
     public DashboardController(AccountService accountService, TransferService transferService,
                                BeneficiaryService beneficiaryService, BillPayService billPayService,
-                               ManagerService managerService) {
+                               ManagerService managerService, ReceiptService receiptService) {
         this.accountService = accountService;
         this.transferService = transferService;
         this.beneficiaryService = beneficiaryService;
         this.billPayService = billPayService;
         this.managerService = managerService;
+        this.receiptService = receiptService;
     }
 
     public void setCurrentUser(User user) {
+        // MVC Pattern: controller receives authenticated user context and coordinates view state.
         this.currentUser = user;
         welcomeLabel.setText("Welcome, " + user.getUsername());
         actionMessageLabel.setText("");
@@ -106,6 +115,9 @@ public class DashboardController {
             userDetailsButton.setDisable(false);
             userDetailsButton.setManaged(true);
             userDetailsButton.setVisible(true);
+            manageUsersButton.setDisable(true);
+            manageUsersButton.setManaged(false);
+            manageUsersButton.setVisible(false);
             return;
         }
 
@@ -122,6 +134,9 @@ public class DashboardController {
         userDetailsButton.setDisable(true);
         userDetailsButton.setManaged(false);
         userDetailsButton.setVisible(false);
+        manageUsersButton.setDisable(true);
+        manageUsersButton.setManaged(false);
+        manageUsersButton.setVisible(false);
     }
 
     private void loadTransactions() {
@@ -144,6 +159,9 @@ public class DashboardController {
         userDetailsButton.setDisable(false);
         userDetailsButton.setManaged(true);
         userDetailsButton.setVisible(true);
+        manageUsersButton.setDisable(false);
+        manageUsersButton.setManaged(true);
+        manageUsersButton.setVisible(true);
 
         actionMessageLabel.setStyle("-fx-text-fill: #2b6a9a;");
         actionMessageLabel.setText("Manager account: Create/Transfer/Bill Pay are disabled. Showing all transactions.");
@@ -151,6 +169,9 @@ public class DashboardController {
 
     @FXML
     protected void handleTransfer(ActionEvent event) throws IOException {
+        if (!isLoggedIn()) {
+            return;
+        }
         if (!hasUsableAccount()) {
             return;
         }
@@ -167,6 +188,9 @@ public class DashboardController {
 
     @FXML
     protected void handleBillPay(ActionEvent event) throws IOException {
+        if (!isLoggedIn()) {
+            return;
+        }
         if (!hasUsableAccount()) {
             return;
         }
@@ -193,6 +217,9 @@ public class DashboardController {
 
     @FXML
     protected void handleRefresh(ActionEvent event) {
+        if (!isLoggedIn()) {
+            return;
+        }
         if ("MANAGER".equalsIgnoreCase(currentUser.getRole())) {
             enterAdminMode();
             return;
@@ -202,6 +229,9 @@ public class DashboardController {
 
     @FXML
     protected void handleCreateAccount(ActionEvent event) throws IOException {
+        if (!isLoggedIn()) {
+            return;
+        }
         if ("MANAGER".equalsIgnoreCase(currentUser.getRole())) {
             showError("Action not allowed", "Manager/admin users cannot create customer accounts from this screen.");
             return;
@@ -224,6 +254,9 @@ public class DashboardController {
 
     @FXML
     protected void handleAddMoney(ActionEvent event) {
+        if (!isLoggedIn()) {
+            return;
+        }
         if ("MANAGER".equalsIgnoreCase(currentUser.getRole())) {
             showError("Action not allowed", "Manager/admin users cannot deposit from this screen.");
             return;
@@ -247,7 +280,16 @@ public class DashboardController {
             BigDecimal amount = new BigDecimal(amountInput.get().trim());
             currentAccount = accountService.addMoney(currentAccount, amount);
             loadFirstAccount();
-            showInfo("Deposit successful", "Rs. " + amount + " has been added.");
+
+                List<Transaction> recent = accountService.getRecentTransactions(currentAccount.getId());
+                Optional<Transaction> depositTx = recent.stream()
+                    .filter(tx -> "DEPOSIT".equalsIgnoreCase(tx.getTransactionType()))
+                    .findFirst();
+
+                String receipt = depositTx
+                    .map(tx -> receiptService.generateTransactionReceipt(tx, currentAccount.getAccountNumber(), null))
+                    .orElse("Rs. " + amount + " has been added.");
+                showInfo("Deposit successful", receipt);
         } catch (NumberFormatException ex) {
             showError("Invalid amount", "Enter a valid number such as 1000 or 1000.50.");
         } catch (Exception ex) {
@@ -257,6 +299,9 @@ public class DashboardController {
 
     @FXML
     protected void handleUserDetails(ActionEvent event) {
+        if (!isLoggedIn()) {
+            return;
+        }
         if ("MANAGER".equalsIgnoreCase(currentUser.getRole())) {
             String details = "Username: " + currentUser.getUsername() + "\n"
                     + "Role: " + currentUser.getRole() + "\n"
@@ -284,6 +329,73 @@ public class DashboardController {
         alert.setTitle("User Details");
         alert.setHeaderText("Account Profile");
         alert.showAndWait();
+    }
+
+    @FXML
+    protected void handleManageUsers(ActionEvent event) {
+        if (!isLoggedIn()) {
+            return;
+        }
+        if (!"MANAGER".equalsIgnoreCase(currentUser.getRole())) {
+            showError("Action not allowed", "Only manager users can manage users.");
+            return;
+        }
+
+        List<UserManagementDto> users = managerService.getAllUserSummaries();
+        String table = users.stream()
+                .map(u -> u.id() + " | " + u.username() + " | " + u.role() + " | blocked=" + u.blocked())
+                .collect(Collectors.joining("\n"));
+
+        TextInputDialog actionDialog = new TextInputDialog("VIEW");
+        actionDialog.setTitle("Manage Users");
+        actionDialog.setHeaderText("Enter action: VIEW, DELETE:<id>, UPDATE_ROLE:<id>:<CUSTOMER|MANAGER>");
+        actionDialog.setContentText("Action:");
+
+        Optional<String> actionInput = actionDialog.showAndWait();
+        if (actionInput.isEmpty()) {
+            return;
+        }
+
+        String action = actionInput.get().trim();
+        try {
+            if ("VIEW".equalsIgnoreCase(action)) {
+                showInfo("Users", table.isBlank() ? "No users found." : table);
+                return;
+            }
+
+            if (action.toUpperCase().startsWith("DELETE:")) {
+                long userId = Long.parseLong(action.substring("DELETE:".length()).trim());
+                managerService.deleteUser(userId);
+                showInfo("Manage Users", "User deleted: " + userId);
+                enterAdminMode();
+                return;
+            }
+
+            if (action.toUpperCase().startsWith("UPDATE_ROLE:")) {
+                String[] parts = action.split(":");
+                if (parts.length != 3) {
+                    throw new IllegalArgumentException("Use UPDATE_ROLE:<id>:<CUSTOMER|MANAGER>");
+                }
+                long userId = Long.parseLong(parts[1].trim());
+                String role = parts[2].trim();
+                managerService.updateUserRole(userId, role);
+                showInfo("Manage Users", "User role updated for id " + userId + " to " + role.toUpperCase());
+                enterAdminMode();
+                return;
+            }
+
+            throw new IllegalArgumentException("Unknown action. Use VIEW, DELETE:<id>, or UPDATE_ROLE:<id>:<role>");
+        } catch (Exception ex) {
+            showError("Manage Users failed", ex.getMessage());
+        }
+    }
+
+    private boolean isLoggedIn() {
+        if (currentUser != null) {
+            return true;
+        }
+        showError("Login required", "Please log in again to continue.");
+        return false;
     }
 
     private boolean hasUsableAccount() {

@@ -22,7 +22,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findByUsername(String username) {
-        String sql = "SELECT id, username, password_hash, role FROM users WHERE username = ?";
+        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE username = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -39,7 +39,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(long id) {
-        String sql = "SELECT id, username, password_hash, role FROM users WHERE id = ?";
+        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
@@ -56,7 +56,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public List<User> findAllByRole(String role) {
-        String sql = "SELECT id, username, password_hash, role FROM users WHERE role = ?";
+        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE role = ?";
         List<User> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -74,7 +74,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public List<User> findAll() {
-        String sql = "SELECT id, username, password_hash, role FROM users ORDER BY id";
+        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users ORDER BY id";
         List<User> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -91,7 +91,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public User create(String username, String passwordHash, String role) {
-        String sql = "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO users (username, password_hash, role, is_blocked) VALUES (?, ?, ?, FALSE)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username);
@@ -106,6 +106,19 @@ public class JdbcUserRepository implements UserRepository {
             throw new IllegalStateException("Failed to create user: no generated key returned");
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create user", e);
+        }
+    }
+
+    @Override
+    public void updateRole(long userId, String role) {
+        String sql = "UPDATE users SET role = ? WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, role);
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to update user role", e);
         }
     }
 

@@ -11,6 +11,7 @@ public interface UserRepository {
     List<User> findAllByRole(String role);
     List<User> findAll();
     User create(String username, String passwordHash, String role);
+    void updateRole(long userId, String role);
     void updateBlockStatus(long userId, boolean isBlocked);
     void deleteUser(long userId);
     boolean isUserBlocked(long userId);

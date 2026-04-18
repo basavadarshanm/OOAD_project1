@@ -20,6 +20,7 @@
     <bottom>
         <HBox spacing="10" styleClass="dashboard-actions">
             <Button fx:id="createAccountButton" text="Create Account" onAction="#handleCreateAccount" styleClass="btn-primary" />
+            <Button fx:id="manageUsersButton" text="Manage Users" onAction="#handleManageUsers" styleClass="btn-primary" visible="false" managed="false" />
             <Button fx:id="userDetailsButton" text="User Details" onAction="#handleUserDetails" styleClass="btn-primary" />
             <Button fx:id="addMoneyButton" text="Add Money" onAction="#handleAddMoney" styleClass="btn-success" />
             <Button fx:id="transferButton" text="Transfer Money" onAction="#handleTransfer" styleClass="btn-secondary" />

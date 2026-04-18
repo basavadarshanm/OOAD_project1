@@ -17,6 +17,7 @@ public class AuthService {
 
     public Optional<User> login(String username, String passwordPlain) {
         return userRepository.findByUsername(username)
+                .filter(user -> !userRepository.isUserBlocked(user.getId()))
                 .filter(user -> user.getPasswordHash().equals(passwordPlain));
     }
 

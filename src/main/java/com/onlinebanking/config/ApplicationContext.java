@@ -11,6 +11,10 @@ import com.onlinebanking.controller.PayBillsController;
 import com.onlinebanking.controller.AccountCreationController;
 import com.onlinebanking.controller.RegisterController;
 import com.onlinebanking.controller.TransferMoneyController;
+import com.onlinebanking.dto.BillPaymentRequestDto;
+import com.onlinebanking.dto.TransferRequestDto;
+import com.onlinebanking.model.BillPayment;
+import com.onlinebanking.model.Transaction;
 import com.onlinebanking.repository.AccountRepository;
 import com.onlinebanking.repository.BeneficiaryRepository;
 import com.onlinebanking.repository.BillPaymentRepository;
@@ -28,6 +32,10 @@ import com.onlinebanking.service.BillPayService;
 import com.onlinebanking.service.ManagerService;
 import com.onlinebanking.service.ReceiptService;
 import com.onlinebanking.service.TransferService;
+import com.onlinebanking.strategy.BillPaymentStrategy;
+import com.onlinebanking.strategy.PaymentStrategy;
+import com.onlinebanking.strategy.PaymentStrategyFactory;
+import com.onlinebanking.strategy.TransferPaymentStrategy;
 import com.onlinebanking.util.DataSourceFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -43,6 +51,10 @@ public final class ApplicationContext {
     private final TransactionRepository transactionRepository;
     private final BeneficiaryRepository beneficiaryRepository;
     private final BillPaymentRepository billPaymentRepository;
+
+    private final PaymentStrategy<TransferRequestDto, Transaction> transferPaymentStrategy;
+    private final PaymentStrategy<BillPaymentRequestDto, BillPayment> billPaymentStrategy;
+    private final PaymentStrategyFactory paymentStrategyFactory;
 
     private final AuthService authService;
     private final AccountService accountService;
@@ -63,11 +75,16 @@ public final class ApplicationContext {
         this.beneficiaryRepository = new JdbcBeneficiaryRepository(dataSource);
         this.billPaymentRepository = new JdbcBillPaymentRepository(dataSource);
 
+        // Strategy Pattern: register payment algorithms used by service layer.
+        this.transferPaymentStrategy = new TransferPaymentStrategy(accountRepository, transactionRepository);
+        this.billPaymentStrategy = new BillPaymentStrategy(accountRepository, billPaymentRepository, transactionRepository);
+        this.paymentStrategyFactory = new PaymentStrategyFactory(transferPaymentStrategy, billPaymentStrategy);
+
         this.authService = new AuthService(userRepository);
         this.accountService = new AccountService(accountRepository, transactionRepository);
-        this.transferService = new TransferService(dataSource, accountRepository, transactionRepository);
+        this.transferService = new TransferService(accountRepository, paymentStrategyFactory);
         this.beneficiaryService = new BeneficiaryService(beneficiaryRepository);
-        this.billPayService = new BillPayService(accountRepository, billPaymentRepository, transactionRepository);
+        this.billPayService = new BillPayService(accountRepository, paymentStrategyFactory, billPaymentRepository);
         this.managerService = new ManagerService(userRepository, transactionRepository);
         this.receiptService = new ReceiptService();
 
@@ -81,7 +98,7 @@ public final class ApplicationContext {
                 return new RegisterController(authService);
             }
             if (type == DashboardController.class) {
-                return new DashboardController(accountService, transferService, beneficiaryService, billPayService, managerService);
+                return new DashboardController(accountService, transferService, beneficiaryService, billPayService, managerService, receiptService);
             }
             if (type == AccountCreationController.class) {
                 return new AccountCreationController(accountService);

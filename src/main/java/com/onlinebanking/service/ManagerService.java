@@ -2,14 +2,16 @@ package com.onlinebanking.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import com.onlinebanking.dto.UserManagementDto;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.model.User;
 import com.onlinebanking.repository.TransactionRepository;
 import com.onlinebanking.repository.UserRepository;
 
 /**
- * Manager/Admin service for user and transaction management
+ * Service Layer Pattern: manager-only business operations for users and transactions.
  */
 public class ManagerService {
     private final UserRepository userRepository;
@@ -32,6 +34,13 @@ public class ManagerService {
      */
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public List<UserManagementDto> getAllUserSummaries() {
+        // DTO Pattern: isolate UI from direct domain entity exposure.
+        return userRepository.findAll().stream()
+                .map(u -> new UserManagementDto(u.getId(), u.getUsername(), u.getRole(), userRepository.isUserBlocked(u.getId())))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -78,7 +87,22 @@ public class ManagerService {
         if (userOpt.isEmpty()) {
             throw new IllegalStateException("User not found");
         }
+        if ("MANAGER".equalsIgnoreCase(userOpt.get().getRole())) {
+            throw new IllegalStateException("Manager users cannot be deleted");
+        }
         userRepository.deleteUser(userId);
+    }
+
+    public void updateUserRole(long userId, String role) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalStateException("User not found");
+        }
+        String normalizedRole = role == null ? "" : role.trim().toUpperCase();
+        if (!"CUSTOMER".equals(normalizedRole) && !"MANAGER".equals(normalizedRole)) {
+            throw new IllegalArgumentException("Role must be CUSTOMER or MANAGER");
+        }
+        userRepository.updateRole(userId, normalizedRole);
     }
 
     /**

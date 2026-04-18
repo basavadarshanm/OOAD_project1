@@ -4,13 +4,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import com.onlinebanking.factory.TransactionFactory;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.repository.TransactionRepository;
 
@@ -100,8 +100,15 @@ public class JdbcTransactionRepository implements TransactionRepository {
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
                     long id = keys.getLong(1);
-                    return new Transaction(id, fromAccountId, toAccountId, transactionType, amount, description, "COMPLETED",
-                            java.time.LocalDateTime.now());
+                        return TransactionFactory.completed(
+                            id,
+                            fromAccountId,
+                            toAccountId,
+                            transactionType,
+                            amount,
+                            description,
+                            java.time.LocalDateTime.now()
+                        );
                 }
             }
             throw new IllegalStateException("Failed to create transaction: no generated key returned");
@@ -112,15 +119,15 @@ public class JdbcTransactionRepository implements TransactionRepository {
 
     private Transaction mapRow(ResultSet rs) throws Exception {
         Long toAccountId = rs.getLong("to_account_id");
-        return new Transaction(
-                rs.getLong("id"),
-                rs.getLong("from_account_id"),
-                rs.wasNull() ? null : toAccountId,
-                rs.getString("transaction_type"),
-                rs.getBigDecimal("amount"),
-                rs.getString("description"),
-                rs.getString("status"),
-                rs.getTimestamp("created_at").toLocalDateTime()
+        return TransactionFactory.withStatus(
+            rs.getLong("id"),
+            rs.getLong("from_account_id"),
+            rs.wasNull() ? null : toAccountId,
+            rs.getString("transaction_type"),
+            rs.getBigDecimal("amount"),
+            rs.getString("description"),
+            rs.getString("status"),
+            rs.getTimestamp("created_at").toLocalDateTime()
         );
     }
 }
