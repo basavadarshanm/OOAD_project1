@@ -1,239 +1,138 @@
-# Online Banking System - Quick Start Guide
+﻿# Online Banking System - Quick Start Guide
 
-## Setup & Build
+## 1. Prerequisites
 
-### Prerequisites
-- Java 21+ installed
+- Java 21+
 - Maven 3.8+
-- H2 database (embedded, no separate installation needed)
 
-### Build Instructions
+## 2. Build and Run
 
 ```bash
-# Navigate to project directory
-cd "d:\SEM 6\OOAD\mini\Online_Banking_System"
-
-# Clean and build
+# from OOAD_project1
 mvn clean package
-
-# Or compile only (without packaging)
-mvn clean compile
+mvn javafx:run
 ```
 
-### Run Instructions
+## 3. Core Flows
+
+### 3.1 Register and Login (Customer)
+
+1. Open app.
+2. Click Create account on Login screen.
+3. Register username/password.
+4. Login with newly created credentials.
+
+### 3.2 Create Bank Account (New Customer)
+
+1. On Dashboard, click Create Account.
+2. Username is prefilled.
+3. Account ID is auto-generated (exactly 8 digits, read-only).
+4. Enter phone number (exactly 10 digits, unique).
+5. Enter initial deposit.
+6. Submit.
+
+Expected:
+- Account gets created.
+- Create Account button disappears.
+- User Details button is enabled.
+
+### 3.3 Add Money
+
+1. Click Add Money.
+2. Enter positive amount.
+3. Confirm.
+
+Expected:
+- Balance updates.
+- DEPOSIT transaction recorded.
+
+### 3.4 Transfer Money
+
+Recipient input supports:
+- 8-digit account ID, or
+- 10-digit phone number
+
+Steps:
+1. Click Transfer Money.
+2. Enter recipient account ID or phone number.
+3. Enter amount and optional description.
+4. Submit.
+
+Expected:
+- Transfer succeeds if recipient exists and funds are sufficient.
+- Receipt shown.
+
+### 3.5 Pay Bills
+
+1. Click Pay Bills.
+2. Enter biller name, reference, amount, due date.
+3. Submit.
+
+Expected:
+- BILL_PAYMENT transaction and bill record created.
+- Receipt shown.
+
+### 3.6 Admin Login Mode
+
+Default (if created in DB):
+- Username: admin_user
+- Password: admin123
+
+Admin mode behavior:
+- Shows all transactions globally.
+- Create/Deposit/Transfer/Bill Pay actions disabled.
+- No account creation prompt for admin.
+
+## 4. H2 Database Access (Windows)
+
+```powershell
+$h2Jar = Join-Path $env:USERPROFILE ".m2\repository\com\h2database\h2\2.2.224\h2-2.2.224.jar"
+$dbPath = "C:/Users/<your-user>/Desktop/OOAD/final_project/OOAD_project1/data/online_banking"
+java -cp "$h2Jar" org.h2.tools.Shell -url "jdbc:h2:file:$dbPath" -user "sa"
+```
+
+Useful queries:
+
+```sql
+SELECT id, username, role FROM users ORDER BY id;
+SELECT account_number, phone_number, balance FROM accounts ORDER BY account_number;
+SELECT id, from_account_id, to_account_id, transaction_type, amount, description, status, created_at
+FROM transactions ORDER BY id DESC;
+```
+
+## 5. Reset Project Data
+
+Close the app first, then run:
+
+```powershell
+Remove-Item .\data\online_banking.mv.db -Force -ErrorAction SilentlyContinue
+Remove-Item .\data\online_banking.trace.db -Force -ErrorAction SilentlyContinue
+mvn clean package
+mvn javafx:run
+```
+
+## 6. Troubleshooting
+
+### Error: Unknown lifecycle phase "packagemvn"
+
+Cause: two Maven commands typed together.
+
+Correct:
 
 ```bash
-# Using Maven
+mvn clean package
 mvn javafx:run
-
-# Or using Java directly (after packaging)
-java -jar target/online-banking-desktop-0.1.0-SNAPSHOT.jar
 ```
 
-## Application Usage
+### Error: Database may be already in use
 
-### 1. Login Screen
-- **Username**: john_doe, jane_smith, bob_johnson, or admin_user
-- **Password**: password123 (for customers) or admin123 (for admin)
-- Click "Create account" to register new user
+Cause: app or H2 shell still open.
 
-### 2. Dashboard
-After successful login, you'll see:
-- Welcome message with your username
-- Current account number and balance
-- Recent transactions list
-- Action buttons
-
-### 3. Transfer Money
-1. Click "Transfer Money" button
-2. Enter recipient account number
-3. Enter amount to transfer
-4. Click "Transfer"
-5. Receipt is displayed with transaction details
-6. Balance updates automatically
-
-**Recipient Accounts:**
-- 1001001: john_doe
-- 1001002: jane_smith
-- 1001003: bob_johnson
-
-### 4. Pay Bills
-1. Click "Pay Bills" button
-2. Enter biller name (e.g., "Electric Company")
-3. Enter bill reference number
-4. Enter amount
-5. Select due date
-6. Click "Pay Bill"
-7. Receipt is displayed
-8. Balance updates
-
-### 5. View Transaction History
-- All recent transactions are shown in the dashboard
-- Transactions include: date, type, amount, status, and description
-
-### 6. Logout
-- Click "Logout" to return to login screen
-
-## Sample Data
-
-### Test Users
-| Username | Password | Role | Account | Balance |
-|----------|----------|------|---------|---------|
-| john_doe | password123 | CUSTOMER | 1001001 | 10000.00 |
-| jane_smith | password123 | CUSTOMER | 1001002 | 15000.00 |
-| bob_johnson | password123 | CUSTOMER | 1001003 | 8500.00 |
-| admin_user | admin123 | MANAGER | N/A | N/A |
-
-## File Locations
-
-### Database
-- Location: `./data/online_banking` (relative to project root)
-- Type: H2 embedded database file
-- Auto-created on first run
-
-### Configuration
-- Database config: `src/main/resources/application.properties`
-- FXML UI files: `src/main/resources/fxml/`
-
-### Database Schema
-- `schema.sql` - contains all CREATE TABLE statements and sample data
-
-## Key Features Demo
-
-### 1. Successful Transfer
-```
-From: 1001001 (john_doe) - Balance: 10000
-To: 1001002 (jane_smith) - Balance: 15000
-Amount: 500
-Result: john_doe balance becomes 9500, jane_smith becomes 15500
-```
-
-### 2. Bill Payment
-```
-Account: 1001001
-Biller: Electric Company
-Reference: ELEC123456
-Amount: 250
-Due Date: 2026-04-25
-Result: Balance deducted, receipt generated
-```
-
-### 3. Transaction History
-```
-Recent 5 transactions shown in dashboard
-Each shows: Date, Type, Amount, Status, Description
-```
-
-## Error Messages & Handling
-
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "Invalid credentials" | Wrong username/password | Check credentials and try again |
-| "Insufficient funds" | Balance < transfer amount | Request lower amount or check balance |
-| "Account not found" | Recipient account doesn't exist | Verify recipient account number |
-| "Fill all fields" | Missing required field | Complete all form fields |
-| "Amount must be positive" | Amount <= 0 | Enter positive amount |
-
-## Troubleshooting
-
-### Database Issues
-- If "Failed to connect to database" error:
-  - Check `application.properties` for correct db.url
-  - Ensure `./data` directory is writable
-  - Try deleting `./data/online_banking.mv.db` and restart
-
-### UI Issues
-- If FXML files not found:
-  - Ensure FXML files exist in `src/main/resources/fxml/`
-  - Rebuild project: `mvn clean compile`
-
-### Memory Issues
-- Increase heap size: `java -Xmx512m -jar target/online-banking-desktop-0.1.0-SNAPSHOT.jar`
-
-## Performance Tips
-
-1. **First Run**: Database initialization takes a few seconds
-2. **Transactions**: Complex queries cached at repository level
-3. **UI**: Lists limited to last 20 transactions for performance
-
-## Project Structure Quick Reference
-
-```
-controller/     - JavaFX controllers (handle UI logic)
-model/          - Data models (User, Account, Transaction, etc.)
-service/        - Business logic (Transfer, BillPay, etc.)
-repository/     - Database access (JDBC queries)
-config/         - Application configuration and DI
-util/           - Utility classes
-resources/
-  ├── fxml/     - JavaFX UI definitions
-  └── application.properties - Database config
-```
-
-## Common Test Cases
-
-### Test 1: Basic Transfer
-```
-1. Login as john_doe (password123)
-2. Click Transfer Money
-3. Enter account: 1001002
-4. Enter amount: 500
-5. Click Transfer
-Expected: Success message, receipt shown
-```
-
-### Test 2: Insufficient Balance
-```
-1. Login as bob_johnson
-2. Click Transfer Money
-3. Enter account: 1001001
-4. Enter amount: 10000
-5. Click Transfer
-Expected: "Insufficient funds" error
-```
-
-### Test 3: Bill Payment
-```
-1. Login as john_doe
-2. Click Pay Bills
-3. Biller: Telephone Company
-4. Reference: TELE999
-5. Amount: 300
-6. Due: pick any date
-7. Click Pay Bill
-Expected: Success message, receipt shown, balance updated
-```
-
-## Resetting Application
-
-To reset and start fresh:
-```bash
-# Delete database file
-rm -r data/online_banking.mv.db (on Linux/Mac)
-del data\online_banking.mv.db (on Windows)
-
-# Restart application
-mvn javafx:run
-# Database will be recreated with sample data
-```
-
-## Next Steps for Enhancement
-
-1. **Admin Dashboard** - Implement manager panel
-2. **Advanced Search** - Filter transactions by date/type
-3. **Recurring Payments** - Schedule automatic payments
-4. **Export Reports** - Generate PDF statements
-5. **Two-Factor Auth** - Add security features
-
-## Support & Documentation
-
-- Project Guide: See `PROJECT_GUIDE.md`
-- Database Schema: See `schema.sql`
-- API Documentation: Code comments in source files
+Fix:
+1. Close app window and H2 shell (exit).
+2. Run `mvn javafx:run` again.
 
 ---
 
-**Created**: April 2026  
-**Version**: 0.1.0-SNAPSHOT  
-**Java**: 21  
-**Framework**: JavaFX 21
+Version: 0.1.0-SNAPSHOT
+Updated: April 2026

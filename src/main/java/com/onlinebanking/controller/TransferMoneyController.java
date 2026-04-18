@@ -31,6 +31,7 @@ public class TransferMoneyController {
     @FXML private Label balanceLabel;
     @FXML private TextField toAccountField;
     @FXML private TextField amountField;
+    @FXML private TextField descriptionField;
     @FXML private TextArea receiptArea;
     @FXML private Label messageLabel;
 
@@ -46,25 +47,54 @@ public class TransferMoneyController {
     public void setCurrentUser(User user, Account account) {
         this.currentUser = user;
         this.currentAccount = account;
+        if (currentAccount == null) {
+            balanceLabel.setText("Balance: N/A");
+            showError("No account is available for this user.");
+            return;
+        }
         balanceLabel.setText("Balance: Rs. " + String.format("%.2f", currentAccount.getBalance()));
     }
 
     @FXML
     protected void handleTransfer(ActionEvent event) {
         try {
+            if (currentAccount == null) {
+                showError("No account available. Please return to dashboard and refresh.");
+                return;
+            }
+
             String toAccount = toAccountField.getText().trim();
+            String description = descriptionField.getText() == null ? "" : descriptionField.getText().trim();
             BigDecimal amount = new BigDecimal(amountField.getText().trim());
 
-            if (toAccount.isEmpty()) { showError("Enter recipient account"); return; }
+            if (toAccount.isEmpty()) { showError("Enter recipient account ID or phone number"); return; }
+            if (!toAccount.matches("\\d{8}|\\d{10}")) {
+                showError("Recipient must be 8-digit account ID or 10-digit phone number");
+                return;
+            }
             if (amount.signum() <= 0) { showError("Amount must be positive"); return; }
 
-            Transaction tx = transferService.transfer(currentAccount.getAccountNumber(), toAccount, amount, "Transfer");
+            Transaction tx = transferService.transfer(
+                    currentAccount.getAccountNumber(),
+                    toAccount,
+                    amount,
+                    description.isEmpty() ? "Transfer" : description
+            );
+                BigDecimal newBalance = currentAccount.getBalance().subtract(amount);
+                currentAccount = new Account(
+                    currentAccount.getId(),
+                    currentAccount.getUserId(),
+                    currentAccount.getAccountNumber(),
+                    newBalance
+                );
+                balanceLabel.setText("Balance: Rs. " + String.format("%.2f", newBalance));
             
             showSuccess("Transfer successful!");
             receiptArea.setText(receiptService.generateTransactionReceipt(tx, currentAccount.getAccountNumber(), toAccount));
             
             toAccountField.clear();
             amountField.clear();
+            descriptionField.clear();
         } catch (Exception e) {
             showError("Error: " + e.getMessage());
         }
@@ -78,7 +108,7 @@ public class TransferMoneyController {
     private void goToDashboard() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
-        Scene scene = new Scene(loader.load(), 600, 500);
+        Scene scene = new Scene(loader.load(), 980, 700);
         DashboardController controller = loader.getController();
         controller.setCurrentUser(currentUser);
         Stage stage = (Stage) balanceLabel.getScene().getWindow();

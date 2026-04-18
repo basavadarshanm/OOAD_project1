@@ -44,12 +44,22 @@ public class PayBillsController {
     public void setCurrentUser(User user, Account account) {
         this.currentUser = user;
         this.currentAccount = account;
+        if (currentAccount == null) {
+            balanceLabel.setText("Balance: N/A");
+            showError("No account is available for this user.");
+            return;
+        }
         balanceLabel.setText("Balance: Rs. " + String.format("%.2f", currentAccount.getBalance()));
     }
 
     @FXML
     protected void handlePayBill(ActionEvent event) {
         try {
+            if (currentAccount == null) {
+                showError("No account available. Please return to dashboard and refresh.");
+                return;
+            }
+
             String biller = billerField.getText().trim();
             String billRef = billRefField.getText().trim();
             BigDecimal amount = new BigDecimal(amountField.getText().trim());
@@ -59,6 +69,14 @@ public class PayBillsController {
             if (amount.signum() <= 0) { showError("Amount must be positive"); return; }
 
             BillPayment payment = billPayService.payBill(currentAccount.getAccountNumber(), biller, amount, billRef, due);
+            BigDecimal newBalance = currentAccount.getBalance().subtract(amount);
+                currentAccount = new Account(
+                    currentAccount.getId(),
+                    currentAccount.getUserId(),
+                    currentAccount.getAccountNumber(),
+                    newBalance
+                );
+            balanceLabel.setText("Balance: Rs. " + String.format("%.2f", newBalance));
             
             showSuccess("Bill paid successfully!");
             receiptArea.setText(receiptService.generateBillPaymentReceipt(biller, billRef, currentAccount.getAccountNumber(), amount, String.valueOf(payment.getId())));
@@ -80,7 +98,7 @@ public class PayBillsController {
     private void goToDashboard() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
-        Scene scene = new Scene(loader.load(), 600, 500);
+        Scene scene = new Scene(loader.load(), 980, 700);
         DashboardController controller = loader.getController();
         controller.setCurrentUser(currentUser);
         Stage stage = (Stage) balanceLabel.getScene().getWindow();

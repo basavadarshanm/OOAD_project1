@@ -30,13 +30,18 @@ public class TransferService {
      * @throws IllegalArgumentException if amount is invalid
      * @throws IllegalStateException if transfer fails
      */
-    public Transaction transfer(String fromAccountNumber, String toAccountNumber, BigDecimal amount, String description) {
+    public Transaction transfer(String fromAccountNumber, String recipientIdentifier, BigDecimal amount, String description) {
         if (amount.signum() <= 0) {
             throw new IllegalArgumentException("Amount must be positive");
         }
 
         Optional<Account> fromOpt = accountRepository.findByAccountNumber(fromAccountNumber);
-        Optional<Account> toOpt = accountRepository.findByAccountNumber(toAccountNumber);
+        Optional<Account> toOpt;
+        if (recipientIdentifier != null && recipientIdentifier.matches("\\d{10}")) {
+            toOpt = accountRepository.findByPhoneNumber(recipientIdentifier);
+        } else {
+            toOpt = accountRepository.findByAccountNumber(recipientIdentifier);
+        }
 
         if (fromOpt.isEmpty() || toOpt.isEmpty()) {
             throw new IllegalStateException("One or both accounts not found");
@@ -44,6 +49,10 @@ public class TransferService {
 
         Account from = fromOpt.get();
         Account to = toOpt.get();
+
+        if (from.getId() == to.getId()) {
+            throw new IllegalStateException("Cannot transfer to the same account");
+        }
 
         if (from.getBalance().compareTo(amount) < 0) {
             throw new IllegalStateException("Insufficient funds. Available: " + from.getBalance());
@@ -66,7 +75,7 @@ public class TransferService {
                         to.getId(),
                         "TRANSFER",
                         amount,
-                        description != null ? description : "Transfer to " + toAccountNumber
+                        description != null ? description : "Transfer to " + recipientIdentifier
                 );
 
                 conn.commit();

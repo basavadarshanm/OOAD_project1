@@ -8,6 +8,7 @@ import javafx.util.Callback;
 import com.onlinebanking.controller.DashboardController;
 import com.onlinebanking.controller.LoginController;
 import com.onlinebanking.controller.PayBillsController;
+import com.onlinebanking.controller.AccountCreationController;
 import com.onlinebanking.controller.RegisterController;
 import com.onlinebanking.controller.TransferMoneyController;
 import com.onlinebanking.repository.AccountRepository;
@@ -80,7 +81,10 @@ public final class ApplicationContext {
                 return new RegisterController(authService);
             }
             if (type == DashboardController.class) {
-                return new DashboardController(accountService, transferService, beneficiaryService, billPayService);
+                return new DashboardController(accountService, transferService, beneficiaryService, billPayService, managerService);
+            }
+            if (type == AccountCreationController.class) {
+                return new AccountCreationController(accountService);
             }
             if (type == TransferMoneyController.class) {
                 return new TransferMoneyController(accountService, transferService, receiptService);

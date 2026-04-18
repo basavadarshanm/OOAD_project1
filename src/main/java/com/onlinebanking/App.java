@@ -17,12 +17,12 @@ public class App extends Application {
         ApplicationContext context = ApplicationContext.getInstance();
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         loader.setControllerFactory(context.getControllerFactory());
-        Scene scene = new Scene(loader.load(), 480, 320);
+        Scene scene = new Scene(loader.load(), 560, 420);
         stage.setTitle("Online Banking");
         stage.setScene(scene);
-        stage.setMinWidth(400);
-        stage.setMinHeight(300);
-        stage.setResizable(false);
+        stage.setMinWidth(560);
+        stage.setMinHeight(420);
+        stage.setResizable(true);
         stage.centerOnScreen();
         stage.toFront();
         stage.setAlwaysOnTop(true); // force window to surface on launch

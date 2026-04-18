@@ -13,14 +13,14 @@
     <center>
         <VBox spacing="15" style="-fx-padding: 20;">
             <GridPane hgap="10" vgap="10">
-                <Label text="Recipient Account:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
-                <TextField fx:id="toAccountField" promptText="Account Number" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                <Label text="Recipient (Acc ID / Phone):" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                <TextField fx:id="toAccountField" promptText="8-digit account ID or 10-digit phone" GridPane.rowIndex="0" GridPane.columnIndex="1" />
                 
                 <Label text="Amount (Rs.):" GridPane.rowIndex="1" GridPane.columnIndex="0" />
                 <TextField fx:id="amountField" promptText="0.00" GridPane.rowIndex="1" GridPane.columnIndex="1" />
                 
                 <Label text="Description:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-                <TextField promptText="Optional" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                <TextField fx:id="descriptionField" promptText="Optional" GridPane.rowIndex="2" GridPane.columnIndex="1" />
             </GridPane>
             
             <HBox spacing="10">
