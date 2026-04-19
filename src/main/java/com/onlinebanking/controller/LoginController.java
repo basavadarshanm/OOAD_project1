@@ -51,6 +51,7 @@ public class LoginController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/register.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 360);
+        scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Online Banking - Register");
     }
@@ -59,6 +60,7 @@ public class LoginController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load());
+        scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
         DashboardController controller = loader.getController();
         controller.setCurrentUser(user);
 

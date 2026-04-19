@@ -210,6 +210,7 @@ public class DashboardController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 320);
+        scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
         Stage window = (Stage) welcomeLabel.getScene().getWindow();
         window.setScene(scene);
         window.setTitle("Online Banking - Login");

@@ -68,6 +68,7 @@ public class RegisterController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         loader.setControllerFactory(ApplicationContext.getInstance().getControllerFactory());
         Scene scene = new Scene(loader.load(), 480, 320);
+        scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Online Banking");
         LoginController controller = loader.getController();

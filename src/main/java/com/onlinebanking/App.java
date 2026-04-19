@@ -18,6 +18,7 @@ public class App extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
         loader.setControllerFactory(context.getControllerFactory());
         Scene scene = new Scene(loader.load(), 560, 420);
+        scene.getStylesheets().add(getClass().getResource("/styles/app.css").toExternalForm());
         stage.setTitle("Online Banking");
         stage.setScene(scene);
         stage.setMinWidth(560);
