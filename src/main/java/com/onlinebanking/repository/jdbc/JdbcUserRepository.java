@@ -22,7 +22,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findByUsername(String username) {
-        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE username = ?";
+        String sql = "SELECT id, username, password_hash, mpin_hash, role, is_blocked FROM users WHERE username = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -39,7 +39,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(long id) {
-        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE id = ?";
+        String sql = "SELECT id, username, password_hash, mpin_hash, role, is_blocked FROM users WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
@@ -56,7 +56,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public List<User> findAllByRole(String role) {
-        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users WHERE role = ?";
+        String sql = "SELECT id, username, password_hash, mpin_hash, role, is_blocked FROM users WHERE role = ?";
         List<User> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -74,7 +74,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public List<User> findAll() {
-        String sql = "SELECT id, username, password_hash, role, is_blocked FROM users ORDER BY id";
+        String sql = "SELECT id, username, password_hash, mpin_hash, role, is_blocked FROM users ORDER BY id";
         List<User> list = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -91,7 +91,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public User create(String username, String passwordHash, String role) {
-        String sql = "INSERT INTO users (username, password_hash, role, is_blocked) VALUES (?, ?, ?, FALSE)";
+        String sql = "INSERT INTO users (username, password_hash, mpin_hash, role, is_blocked) VALUES (?, ?, NULL, ?, FALSE)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username);
@@ -106,6 +106,68 @@ public class JdbcUserRepository implements UserRepository {
             throw new IllegalStateException("Failed to create user: no generated key returned");
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create user", e);
+        }
+    }
+
+    @Override
+    public void updatePassword(long userId, String passwordHash) {
+        String sql = "UPDATE users SET password_hash = ? WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, passwordHash);
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to update user password", e);
+        }
+    }
+
+    @Override
+    public void updateMpin(long userId, String mpinHash) {
+        String sql = "UPDATE users SET mpin_hash = ? WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, mpinHash);
+            ps.setLong(2, userId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to update user MPIN", e);
+        }
+    }
+
+    @Override
+    public boolean hasMpin(long userId) {
+        String sql = "SELECT mpin_hash FROM users WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
+                String mpin = rs.getString("mpin_hash");
+                return mpin != null && !mpin.isBlank();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to check user MPIN", e);
+        }
+    }
+
+    @Override
+    public boolean verifyMpin(long userId, String mpinHash) {
+        String sql = "SELECT mpin_hash FROM users WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
+                String mpin = rs.getString("mpin_hash");
+                return mpin != null && mpin.equals(mpinHash);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to verify user MPIN", e);
         }
     }
 
@@ -169,6 +231,7 @@ public class JdbcUserRepository implements UserRepository {
                 rs.getLong("id"),
                 rs.getString("username"),
                 rs.getString("password_hash"),
+                rs.getString("mpin_hash"),
                 rs.getString("role")
         );
     }

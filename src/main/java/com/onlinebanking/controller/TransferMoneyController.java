@@ -2,12 +2,14 @@ package com.onlinebanking.controller;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import com.onlinebanking.config.ApplicationContext;
 import com.onlinebanking.model.Account;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.model.User;
 import com.onlinebanking.service.AccountService;
+import com.onlinebanking.service.AuthService;
 import com.onlinebanking.service.ReceiptService;
 import com.onlinebanking.service.TransferService;
 
@@ -15,9 +17,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class TransferMoneyController {
@@ -27,6 +34,7 @@ public class TransferMoneyController {
     private final AccountService accountService;
     private final TransferService transferService;
     private final ReceiptService receiptService;
+    private final AuthService authService;
 
     @FXML private Label balanceLabel;
     @FXML private TextField toAccountField;
@@ -35,10 +43,12 @@ public class TransferMoneyController {
     @FXML private TextArea receiptArea;
     @FXML private Label messageLabel;
 
-    public TransferMoneyController(AccountService accountService, TransferService transferService, ReceiptService receiptService) {
+    public TransferMoneyController(AccountService accountService, TransferService transferService, ReceiptService receiptService,
+                                   AuthService authService) {
         this.accountService = accountService;
         this.transferService = transferService;
         this.receiptService = receiptService;
+        this.authService = authService;
     }
 
     @FXML
@@ -73,6 +83,7 @@ public class TransferMoneyController {
                 return;
             }
             if (amount.signum() <= 0) { showError("Amount must be positive"); return; }
+                if (!verifyTransferMpin()) { return; }
 
             Transaction tx = transferService.transfer(
                     currentAccount.getAccountNumber(),
@@ -118,4 +129,55 @@ public class TransferMoneyController {
 
     private void showSuccess(String msg) { messageLabel.setStyle("-fx-text-fill: green;"); messageLabel.setText(msg); }
     private void showError(String msg) { messageLabel.setStyle("-fx-text-fill: red;"); messageLabel.setText(msg); }
+
+    private boolean verifyTransferMpin() {
+        if (!authService.hasMpin(currentUser.getId())) {
+            showError("Set your 4-digit MPIN from User Details before transferring money.");
+            return false;
+        }
+
+        Optional<String> mpinInput = promptMaskedMpin();
+        if (mpinInput.isEmpty()) {
+            showError("Transfer cancelled: MPIN verification is required.");
+            return false;
+        }
+
+        if (!authService.verifyMpin(currentUser.getId(), mpinInput.get())) {
+            showError("Invalid MPIN. Transfer blocked.");
+            return false;
+        }
+        return true;
+    }
+
+    private Optional<String> promptMaskedMpin() {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("MPIN Verification");
+        dialog.setHeaderText("Enter your 4-digit MPIN to continue");
+
+        ButtonType verifyButtonType = new ButtonType("Verify", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(verifyButtonType, ButtonType.CANCEL);
+
+        PasswordField mpinField = new PasswordField();
+        mpinField.setPromptText("MPIN (4 digits)");
+        mpinField.textProperty().addListener((obs, oldValue, newValue) -> {
+            if (!newValue.matches("\\d{0,4}")) {
+                mpinField.setText(oldValue);
+            }
+        });
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("MPIN:"), 0, 0);
+        grid.add(mpinField, 1, 0);
+
+        dialog.getDialogPane().setContent(grid);
+
+        javafx.scene.Node verifyButton = dialog.getDialogPane().lookupButton(verifyButtonType);
+        verifyButton.setDisable(true);
+        mpinField.textProperty().addListener((obs, oldValue, newValue) -> verifyButton.setDisable(newValue.length() != 4));
+
+        dialog.setResultConverter(button -> button == verifyButtonType ? mpinField.getText() : null);
+        return dialog.showAndWait();
+    }
 }

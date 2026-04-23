@@ -18,6 +18,7 @@ import com.onlinebanking.service.BillPayService;
 import com.onlinebanking.service.ManagerService;
 import com.onlinebanking.service.ReceiptService;
 import com.onlinebanking.service.TransferService;
+import com.onlinebanking.service.AuthService;
 
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -25,11 +26,15 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class DashboardController {
@@ -39,6 +44,7 @@ public class DashboardController {
     private final BillPayService billPayService;
     private final ManagerService managerService;
     private final ReceiptService receiptService;
+    private final AuthService authService;
 
     private User currentUser;
     private Account currentAccount;
@@ -70,13 +76,15 @@ public class DashboardController {
 
     public DashboardController(AccountService accountService, TransferService transferService,
                                BeneficiaryService beneficiaryService, BillPayService billPayService,
-                               ManagerService managerService, ReceiptService receiptService) {
+                               ManagerService managerService, ReceiptService receiptService,
+                               AuthService authService) {
         this.accountService = accountService;
         this.transferService = transferService;
         this.beneficiaryService = beneficiaryService;
         this.billPayService = billPayService;
         this.managerService = managerService;
         this.receiptService = receiptService;
+        this.authService = authService;
     }
 
     public void setCurrentUser(User user) {
@@ -90,6 +98,7 @@ public class DashboardController {
             return;
         }
 
+        promptMpinSetupIfMissing();
         loadFirstAccount();
     }
 
@@ -363,6 +372,37 @@ public class DashboardController {
             return;
         }
 
+        TextInputDialog actionDialog = new TextInputDialog("VIEW");
+        actionDialog.setTitle("User Actions");
+        actionDialog.setHeaderText("Enter action: VIEW, CHANGE_PASSWORD, SET_MPIN");
+        actionDialog.setContentText("Action:");
+
+        Optional<String> actionInput = actionDialog.showAndWait();
+        if (actionInput.isEmpty()) {
+            return;
+        }
+
+        String action = actionInput.get().trim().toUpperCase();
+        try {
+            if ("VIEW".equals(action)) {
+                showCustomerDetails();
+                return;
+            }
+            if ("CHANGE_PASSWORD".equals(action)) {
+                handleChangePassword();
+                return;
+            }
+            if ("SET_MPIN".equals(action)) {
+                handleSetOrResetMpin();
+                return;
+            }
+            showError("Unknown action", "Use VIEW, CHANGE_PASSWORD, or SET_MPIN.");
+        } catch (Exception ex) {
+            showError("User action failed", ex.getMessage());
+        }
+    }
+
+    private void showCustomerDetails() {
         String phone = accountService.getPhoneNumber(currentAccount.getAccountNumber());
         String details = "Username: " + currentUser.getUsername() + "\n"
                 + "Role: " + currentUser.getRole() + "\n"
@@ -374,6 +414,93 @@ public class DashboardController {
         alert.setTitle("User Details");
         alert.setHeaderText("Account Profile");
         alert.showAndWait();
+    }
+
+    private void handleChangePassword() {
+        Optional<String> currentPassword = promptMaskedInput("Change Password", "Verify your current password", "Current password:");
+        if (currentPassword.isEmpty()) {
+            return;
+        }
+        Optional<String> newPassword = promptMaskedInput("Change Password", "Enter your new password", "New password:");
+        if (newPassword.isEmpty()) {
+            return;
+        }
+        Optional<String> confirmPassword = promptMaskedInput("Change Password", "Confirm your new password", "Confirm password:");
+        if (confirmPassword.isEmpty()) {
+            return;
+        }
+
+        if (!newPassword.get().equals(confirmPassword.get())) {
+            throw new IllegalArgumentException("New password and confirm password do not match");
+        }
+
+        authService.changePassword(currentUser.getId(), currentPassword.get(), newPassword.get());
+        showInfo("Password Updated", "Your password has been changed successfully.");
+    }
+
+    private void handleSetOrResetMpin() {
+        Optional<String> mpin = promptMaskedInput("Set MPIN", "Create a 4-digit MPIN for transfer verification", "MPIN (4 digits):");
+        if (mpin.isEmpty()) {
+            return;
+        }
+        Optional<String> confirm = promptMaskedInput("Set MPIN", "Confirm your 4-digit MPIN", "Confirm MPIN:");
+        if (confirm.isEmpty()) {
+            return;
+        }
+
+        if (!mpin.get().matches("\\d{4}")) {
+            throw new IllegalArgumentException("MPIN must be exactly 4 digits");
+        }
+        if (!mpin.get().equals(confirm.get())) {
+            throw new IllegalArgumentException("MPIN and confirm MPIN do not match");
+        }
+
+        authService.setMpin(currentUser.getId(), mpin.get());
+        showInfo("MPIN Updated", "Your transfer MPIN has been set successfully.");
+    }
+
+    private void promptMpinSetupIfMissing() {
+        if (authService.hasMpin(currentUser.getId())) {
+            return;
+        }
+
+        Alert alert = new Alert(
+                Alert.AlertType.INFORMATION,
+                "You have not created an MPIN yet. Set a 4-digit MPIN now. It will be required for all money transfers.",
+                ButtonType.OK
+        );
+        alert.setTitle("MPIN Setup Required");
+        alert.setHeaderText("Create Transfer MPIN");
+        alert.showAndWait();
+
+        try {
+            handleSetOrResetMpin();
+        } catch (Exception ex) {
+            showError("MPIN setup skipped", ex.getMessage());
+        }
+    }
+
+    private Optional<String> promptMaskedInput(String title, String header, String labelText) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.setHeaderText(header);
+
+        ButtonType okButtonType = new ButtonType("Submit", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+        PasswordField input = new PasswordField();
+        input.setPromptText(labelText);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label(labelText), 0, 0);
+        grid.add(input, 1, 0);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(button -> button == okButtonType ? input.getText() : null);
+
+        return dialog.showAndWait().map(String::trim).filter(value -> !value.isEmpty());
     }
 
     @FXML

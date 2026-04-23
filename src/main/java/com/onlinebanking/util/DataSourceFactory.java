@@ -71,6 +71,7 @@ public final class DataSourceFactory {
                     id BIGINT PRIMARY KEY AUTO_INCREMENT,
                     username VARCHAR(64) UNIQUE NOT NULL,
                     password_hash VARCHAR(255) NOT NULL,
+                    mpin_hash VARCHAR(4),
                     role VARCHAR(16) NOT NULL,
                     is_blocked BOOLEAN NOT NULL DEFAULT FALSE
                 );
@@ -128,6 +129,7 @@ public final class DataSourceFactory {
     private static void migrateLegacySchema(Connection conn) throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE");
+            stmt.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS mpin_hash VARCHAR(4)");
 
             // Accounts migration: add phone_number if missing.
             stmt.execute("ALTER TABLE accounts ADD COLUMN IF NOT EXISTS phone_number VARCHAR(16)");

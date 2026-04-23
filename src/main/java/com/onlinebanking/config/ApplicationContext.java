@@ -98,13 +98,13 @@ public final class ApplicationContext {
                 return new RegisterController(authService);
             }
             if (type == DashboardController.class) {
-                return new DashboardController(accountService, transferService, beneficiaryService, billPayService, managerService, receiptService);
+                return new DashboardController(accountService, transferService, beneficiaryService, billPayService, managerService, receiptService, authService);
             }
             if (type == AccountCreationController.class) {
                 return new AccountCreationController(accountService);
             }
             if (type == TransferMoneyController.class) {
-                return new TransferMoneyController(accountService, transferService, receiptService);
+                return new TransferMoneyController(accountService, transferService, receiptService, authService);
             }
             if (type == PayBillsController.class) {
                 return new PayBillsController(billPayService, receiptService);
