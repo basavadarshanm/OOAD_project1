@@ -228,6 +228,12 @@ Login as john_doe first, then go to Pay Bills.
 
 ## 8. H2 Data Storage Verification
 
+java -jar "C:\Users\bhara\.m2\repository\com\h2database\h2\2.2.224\h2-2.2.224.jar"
+
+
+JDBC URL: jdbc:h2:file:C:/Users/bhara/Desktop/OOAD/final_project/OOAD_project1/data/online_banking
+User Name: sa
+
 ## Option A: H2 Shell (CLI)
 
 Run this in project root on Windows PowerShell:

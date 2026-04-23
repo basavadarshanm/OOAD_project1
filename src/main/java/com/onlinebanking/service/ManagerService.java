@@ -5,8 +5,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.onlinebanking.dto.UserManagementDto;
+import com.onlinebanking.model.Account;
 import com.onlinebanking.model.Transaction;
 import com.onlinebanking.model.User;
+import com.onlinebanking.repository.AccountRepository;
 import com.onlinebanking.repository.TransactionRepository;
 import com.onlinebanking.repository.UserRepository;
 
@@ -15,10 +17,12 @@ import com.onlinebanking.repository.UserRepository;
  */
 public class ManagerService {
     private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
-    public ManagerService(UserRepository userRepository, TransactionRepository transactionRepository) {
+    public ManagerService(UserRepository userRepository, AccountRepository accountRepository, TransactionRepository transactionRepository) {
         this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
     }
 
@@ -54,10 +58,11 @@ public class ManagerService {
      * Block a user account
      */
     public void blockUser(long userId) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            throw new IllegalStateException("User not found");
-        }
+        blockUser(String.valueOf(userId));
+    }
+
+    public void blockUser(String userIdOrAccountNumber) {
+        long userId = resolveUserId(userIdOrAccountNumber);
         userRepository.updateBlockStatus(userId, true);
     }
 
@@ -65,10 +70,11 @@ public class ManagerService {
      * Unblock a user account
      */
     public void unblockUser(long userId) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            throw new IllegalStateException("User not found");
-        }
+        unblockUser(String.valueOf(userId));
+    }
+
+    public void unblockUser(String userIdOrAccountNumber) {
+        long userId = resolveUserId(userIdOrAccountNumber);
         userRepository.updateBlockStatus(userId, false);
     }
 
@@ -133,5 +139,28 @@ public class ManagerService {
      */
     public Optional<Transaction> getTransaction(long transactionId) {
         return transactionRepository.findById(transactionId);
+    }
+
+    private long resolveUserId(String userIdOrAccountNumber) {
+        String normalized = userIdOrAccountNumber == null ? "" : userIdOrAccountNumber.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("User ID or account number is required");
+        }
+
+        try {
+            long userId = Long.parseLong(normalized);
+            if (userRepository.findById(userId).isPresent()) {
+                return userId;
+            }
+        } catch (NumberFormatException ignored) {
+            // Fall through to account-number lookup.
+        }
+
+        Optional<Account> accountOpt = accountRepository.findByAccountNumber(normalized);
+        if (accountOpt.isPresent()) {
+            return accountOpt.get().getUserId();
+        }
+
+        throw new IllegalStateException("User not found for ID or account number: " + normalized);
     }
 }

@@ -21,6 +21,8 @@ This project demonstrates:
 - Unique 10-digit phone number binding per account
 - Initial deposit at account creation
 - Add Money (deposit)
+- Add Beneficiary using a user ID or 10-digit phone number
+- Beneficiary creation validates that the referenced user/account exists before saving
 - Transfer money using recipient account ID or phone number
 - Bill payment with receipt generation
 - Dashboard transaction history view
@@ -28,7 +30,16 @@ This project demonstrates:
 ### Admin (Manager) Features
 - Role-based admin login mode
 - Read-only global transaction monitor
+- Manage users by ID from the dashboard
+- Block and unblock a user by entering the user ID
+- View the current user list with ID, username, role, and block status columns
 - Customer financial actions disabled in admin mode
+
+## Dashboard User Management
+
+- Customer users see the Add Beneficiary action on the dashboard.
+- Admin users can open Manage Users to view the full summary table first, then run actions such as `VIEW`, `DELETE:<id>`, `UPDATE_ROLE:<id>:<CUSTOMER|MANAGER>`, `BLOCK:<id>`, and `UNBLOCK:<id>`.
+- Blocking and unblocking are validated against the entered user ID before the repository update is applied.
 
 ## Tech Stack
 

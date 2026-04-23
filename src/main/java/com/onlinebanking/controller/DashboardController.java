@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.onlinebanking.config.ApplicationContext;
+import com.onlinebanking.model.Beneficiary;
 import com.onlinebanking.dto.UserManagementDto;
 import com.onlinebanking.model.Account;
 import com.onlinebanking.model.Transaction;
@@ -63,6 +64,8 @@ public class DashboardController {
     @FXML
     private Button addMoneyButton;
     @FXML
+    private Button addBeneficiaryButton;
+    @FXML
     private Button manageUsersButton;
 
     public DashboardController(AccountService accountService, TransferService transferService,
@@ -109,6 +112,9 @@ public class DashboardController {
             transferButton.setDisable(false);
             billPayButton.setDisable(false);
             addMoneyButton.setDisable(false);
+            addBeneficiaryButton.setDisable(false);
+            addBeneficiaryButton.setManaged(true);
+            addBeneficiaryButton.setVisible(true);
             createAccountButton.setDisable(true);
             createAccountButton.setManaged(false);
             createAccountButton.setVisible(false);
@@ -128,6 +134,9 @@ public class DashboardController {
         transferButton.setDisable(true);
         billPayButton.setDisable(true);
         addMoneyButton.setDisable(true);
+        addBeneficiaryButton.setDisable(true);
+        addBeneficiaryButton.setManaged(false);
+        addBeneficiaryButton.setVisible(false);
         createAccountButton.setDisable(false);
         createAccountButton.setManaged(true);
         createAccountButton.setVisible(true);
@@ -153,6 +162,9 @@ public class DashboardController {
         transferButton.setDisable(true);
         billPayButton.setDisable(true);
         addMoneyButton.setDisable(true);
+        addBeneficiaryButton.setDisable(true);
+        addBeneficiaryButton.setManaged(false);
+        addBeneficiaryButton.setVisible(false);
         createAccountButton.setDisable(true);
         createAccountButton.setManaged(false);
         createAccountButton.setVisible(false);
@@ -299,6 +311,38 @@ public class DashboardController {
     }
 
     @FXML
+    protected void handleAddBeneficiary(ActionEvent event) {
+        if (!isLoggedIn()) {
+            return;
+        }
+        if ("MANAGER".equalsIgnoreCase(currentUser.getRole())) {
+            showError("Action not allowed", "Manager/admin users cannot add beneficiaries from this screen.");
+            return;
+        }
+
+        if (!hasUsableAccount()) {
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Add Beneficiary");
+        dialog.setHeaderText("Enter beneficiary user ID or 10-digit phone number");
+        dialog.setContentText("Identifier:");
+
+        Optional<String> identifierInput = dialog.showAndWait();
+        if (identifierInput.isEmpty()) {
+            return;
+        }
+
+        try {
+            Beneficiary beneficiary = beneficiaryService.addBeneficiaryForUser(currentUser.getId(), identifierInput.get());
+            showInfo("Beneficiary added", "Saved " + beneficiary.getName() + " (Account: " + beneficiary.getAccountNumber() + ")");
+        } catch (Exception ex) {
+            showError("Unable to add beneficiary", ex.getMessage());
+        }
+    }
+
+    @FXML
     protected void handleUserDetails(ActionEvent event) {
         if (!isLoggedIn()) {
             return;
@@ -347,9 +391,11 @@ public class DashboardController {
                 .map(u -> u.id() + " | " + u.username() + " | " + u.role() + " | blocked=" + u.blocked())
                 .collect(Collectors.joining("\n"));
 
+        showInfo("Users", table.isBlank() ? "No users found." : table);
+
         TextInputDialog actionDialog = new TextInputDialog("VIEW");
         actionDialog.setTitle("Manage Users");
-        actionDialog.setHeaderText("Enter action: VIEW, DELETE:<id>, UPDATE_ROLE:<id>:<CUSTOMER|MANAGER>");
+        actionDialog.setHeaderText("Enter action: VIEW, DELETE:<id>, UPDATE_ROLE:<id>:<CUSTOMER|MANAGER>, BLOCK:<user id or account number>, UNBLOCK:<user id or account number>");
         actionDialog.setContentText("Action:");
 
         Optional<String> actionInput = actionDialog.showAndWait();
@@ -372,6 +418,25 @@ public class DashboardController {
                 return;
             }
 
+            if (action.toUpperCase().startsWith("BLOCK:")) {
+                long userId = Long.parseLong(action.substring("BLOCK:".length()).trim());
+                if (userId == currentUser.getId()) {
+                    throw new IllegalStateException("You cannot block your own account");
+                }
+                managerService.blockUser(userId);
+                showInfo("Manage Users", "User blocked: " + userId);
+                enterAdminMode();
+                return;
+            }
+
+            if (action.toUpperCase().startsWith("UNBLOCK:")) {
+                long userId = Long.parseLong(action.substring("UNBLOCK:".length()).trim());
+                managerService.unblockUser(userId);
+                showInfo("Manage Users", "User unblocked: " + userId);
+                enterAdminMode();
+                return;
+            }
+
             if (action.toUpperCase().startsWith("UPDATE_ROLE:")) {
                 String[] parts = action.split(":");
                 if (parts.length != 3) {
@@ -385,7 +450,7 @@ public class DashboardController {
                 return;
             }
 
-            throw new IllegalArgumentException("Unknown action. Use VIEW, DELETE:<id>, or UPDATE_ROLE:<id>:<role>");
+            throw new IllegalArgumentException("Unknown action. Use VIEW, DELETE:<id>, UPDATE_ROLE:<id>:<role>, BLOCK:<id>, or UNBLOCK:<id>");
         } catch (Exception ex) {
             showError("Manage Users failed", ex.getMessage());
         }

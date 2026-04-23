@@ -83,9 +83,9 @@ public final class ApplicationContext {
         this.authService = new AuthService(userRepository);
         this.accountService = new AccountService(accountRepository, transactionRepository);
         this.transferService = new TransferService(accountRepository, paymentStrategyFactory);
-        this.beneficiaryService = new BeneficiaryService(beneficiaryRepository);
+        this.beneficiaryService = new BeneficiaryService(beneficiaryRepository, userRepository, accountRepository);
         this.billPayService = new BillPayService(accountRepository, paymentStrategyFactory, billPaymentRepository);
-        this.managerService = new ManagerService(userRepository, transactionRepository);
+        this.managerService = new ManagerService(userRepository, accountRepository, transactionRepository);
         this.receiptService = new ReceiptService();
 
         this.controllerFactory = new Callback<Class<?>, Object>() {
